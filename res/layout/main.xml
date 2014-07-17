@@ -1,32 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:orientation="vertical"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
+<GridView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/gv_main"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:cacheColorHint="#0000"
+        android:gravity="center"
+        android:listSelector="@drawable/listview_item_selector"
+        android:numColumns="3"
+        android:stretchMode="columnWidth"
+        android:background="#ffff"
         >
-    <TextView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="Hello World, MainActivity"
-            />
-    <Button
-            android:id="@+id/btn_open_dialer"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="打开拨号界面"
-            />
-    <Button
-            android:id="@+id/btn_open_browser"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="打开浏览器"
-            />
 
-    <Button
-            android:id="@+id/btn_open_next_activity"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="打开下一个界面"
-            />
-</LinearLayout>
-
+</GridView>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/black"
+        android:textSize="@dimen/listview_item_title_text_size"
+        android:text="全部音乐dfasdfasdf"
+        android:drawableTop="@drawable/ic_launcher"
+        android:drawablePadding="6dp"
+        android:padding="12dip"
+        android:gravity="center"
+        tools:background="#ffff"
+        />
