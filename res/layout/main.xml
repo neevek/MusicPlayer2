@@ -9,5 +9,24 @@
             android:layout_height="wrap_content"
             android:text="Hello World, MainActivity"
             />
+    <Button
+            android:id="@+id/btn_open_dialer"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="打开拨号界面"
+            />
+    <Button
+            android:id="@+id/btn_open_browser"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="打开浏览器"
+            />
+
+    <Button
+            android:id="@+id/btn_open_next_activity"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="打开下一个界面"
+            />
 </LinearLayout>
 
