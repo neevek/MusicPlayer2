@@ -2,6 +2,8 @@ package com.example.musicplayer.fragment;
 
 import android.app.AlertDialog;
 import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.graphics.drawable.BitmapDrawable;
@@ -9,10 +11,7 @@ import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.*;
-import android.widget.AdapterView;
-import android.widget.BaseAdapter;
-import android.widget.GridView;
-import android.widget.TextView;
+import android.widget.*;
 import com.example.musicplayer.R;
 import com.example.musicplayer.lib.log.L;
 import com.example.musicplayer.lib.task.TaskExecutor;
@@ -23,6 +22,7 @@ import com.example.musicplayer.pojo.SongCollection;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by neevek on 7/20/14.
@@ -33,7 +33,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
     private GridView mGridView;
     private MainGridViewItemAdapter mAdapter;
 
-    private final static String[] MENU_ITEM_TEXT = new String[]{"全部音乐", "歌手", "专辑"};
+    private final static String[] MENU_ITEM_TEXT = new String[]{"全部歌曲", "歌手", "专辑"};
     private final static int[] MENU_ITEM_ICON = new int[] { R.drawable.icon_music, R.drawable.icon_artist, R.drawable.icon_album };
 
 
@@ -49,6 +49,12 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         mTitle = getResources().getString(R.string.app_name);
         getActivity().setTitle(mTitle);
 
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        getActivity().setTitle("音乐播放器");
     }
 
     @Override
@@ -119,7 +125,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             if (mSongCollection != null) {
                 switch (position) {
                     case 0:
-                        tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(" + mSongCollection.getSongCollection().size() + ")");
+                        tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(" + mSongCollection.getAllSongs().size() + ")");
                         break;
                     case 1:
                         tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(" + mSongCollection.getSongCollectionByType(SongCollection.CollectionType.ARTIST).size() + ")");
@@ -139,13 +145,84 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (position) {
-            case 0:
+            case 0: {
+                pushMusicListFragmentWithSongList("全部歌曲", mSongCollection.getAllSongs());
                 break;
-            case 1:
+            }
+            case 1: {
+                pushCategorizedMusicListFragment(SongCollection.CollectionType.ARTIST);
                 break;
-            case 2:
+            }
+            case 2: {
+                pushCategorizedMusicListFragment(SongCollection.CollectionType.ALBUM);
                 break;
+            }
         }
+    }
+
+    private void pushMusicListFragmentWithSongList(String title, final List<Song> songList) {
+        pushMusicListFragmentWithItemHandler(title, new MusicListFragment.MusicListItemHandler() {
+            @Override
+            public int getCount() {
+                return songList.size();
+            }
+
+            @Override
+            public String getItemTitle(int position) {
+                return songList.get(position).title;
+            }
+
+            @Override
+            public String getItemSubtitle(int position) {
+                Song song = songList.get(position);
+                return "[" + Util.formatMilliseconds(song.duration, null) + "] by " + song.artist;
+            }
+
+            @Override
+            public void onItemClick(int position) {
+                Toast.makeText(getActivity(), "Start playing...", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void pushCategorizedMusicListFragment(SongCollection.CollectionType type) {
+        final Map<String, List<Song>> map = mSongCollection.getSongCollectionByType(type);
+        final List<String> keyList = new ArrayList<String>(map.keySet());
+        pushMusicListFragmentWithItemHandler(type.getTitle(), new MusicListFragment.MusicListItemHandler() {
+            @Override
+            public int getCount() {
+                return keyList.size();
+            }
+
+            @Override
+            public String getItemTitle(int position) {
+                return keyList.get(position);
+            }
+
+            @Override
+            public String getItemSubtitle(int position) {
+                return map.get(keyList.get(position)).size() + "首歌";
+            }
+
+            @Override
+            public void onItemClick(int position) {
+                String key = keyList.get(position);
+                List<Song> songList = map.get(key);
+                pushMusicListFragmentWithSongList(key, songList);
+            }
+        });
+    }
+
+    private void pushMusicListFragmentWithItemHandler(String title, MusicListFragment.MusicListItemHandler handler) {
+        FragmentManager fm = getFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+
+        ft.replace(R.id.container, new MusicListFragment(title, handler));
+
+        ft.addToBackStack(null);
+        ft.setTransition(FragmentTransaction.TRANSIT_ENTER_MASK);
+
+        ft.commitAllowingStateLoss();
     }
 
     @Override
