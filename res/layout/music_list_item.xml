@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:orientation="vertical"
-      android:padding="4dip"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="4dip"
+                tools:background="#fff"
         >
 
     <TextView
@@ -21,32 +22,17 @@
             />
 
     <TextView
-            android:id="@+id/tv_duration"
+            android:id="@+id/tv_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/gray"
             android:textSize="@dimen/listview_item_subtitle_text_size"
-            android:text="[00：00]"
+            android:text="[00:00] Mich"
             android:padding="2dp"
             android:singleLine="true"
             android:ellipsize="end"
             android:maxLines="1"
             android:layout_below="@id/tv_title"
-            />
-
-    <TextView
-            android:id="@+id/tv_artist"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/gray"
-            android:textSize="@dimen/listview_item_subtitle_text_size"
-            android:text="歌手"
-            android:padding="2dp"
-            android:singleLine="true"
-            android:ellipsize="end"
-            android:maxLines="1"
-            android:layout_below="@id/tv_title"
-            android:layout_toRightOf="@id/tv_duration"
             />
 
 </RelativeLayout>

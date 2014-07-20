@@ -5,8 +5,10 @@
     <color name="background">#ffeeeeee</color>
 
     <drawable name="list_normal">#ffff</drawable>
-    <drawable name="list_pressed">#fccc</drawable>
+    <drawable name="list_pressed">#ffe6e6e6</drawable>
 
     <drawable name="btn_bg_normal">#c333</drawable>
     <drawable name="btn_bg_pressed">#c666</drawable>
+
+    <drawable name="divider">#ffe6e6e6</drawable>
 </resources>
