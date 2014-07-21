@@ -5,19 +5,24 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.*;
-import android.widget.*;
+import android.widget.AdapterView;
+import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.TextView;
 import com.example.musicplayer.R;
 import com.example.musicplayer.lib.log.L;
 import com.example.musicplayer.lib.task.TaskExecutor;
 import com.example.musicplayer.lib.util.Util;
 import com.example.musicplayer.pojo.Song;
 import com.example.musicplayer.pojo.SongCollection;
+import com.example.musicplayer.service.MusicPlayerService;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -180,7 +185,13 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
 
             @Override
             public void onItemClick(int position) {
-                Toast.makeText(getActivity(), "Start playing...", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(getActivity(), "Start playing...", Toast.LENGTH_SHORT).show();
+                Song song = songList.get(position);
+
+                Intent intent = new Intent(getActivity(), MusicPlayerService.class);
+                intent.putExtra("song", song);
+                intent.putExtra("progress", 0);
+                getActivity().startService(intent);
             }
         });
     }
@@ -269,14 +280,15 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             // make sure the following code is exception free.
 
             Cursor cursor = getActivity().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-                    , new String[]{MediaStore.Audio.Media.DATA}
+                    , new String[]{ MediaStore.Audio.Media._ID, MediaStore.Audio.Media.DATA }
                     , MediaStore.Audio.Media.IS_MUSIC + "!=0"
                     , null
                     , null
             );
 
             while (cursor.moveToNext()) {
-                String filePath = cursor.getString(0);
+                long id = cursor.getLong(0);
+                String filePath = cursor.getString(1);
 
                 File file = new File(filePath);
                 if (!file.exists()) {
@@ -299,10 +311,10 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                     String artist = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST), "");
                     String album = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM), "");
 
-                    Song song = new Song(title, artist, album, intDuration, filePath);
+                    Song song = new Song(id, title, artist, album, intDuration, filePath);
                     songList.add(song);
 
-                    L.d("loaded song: %s, %s, %s, %s", title, artist, album, duration);
+                    L.d("loaded song: %d, %s, %s, %s, %s", id, title, artist, album, duration);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
