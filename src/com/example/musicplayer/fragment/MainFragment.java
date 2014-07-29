@@ -6,25 +6,21 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.drawable.BitmapDrawable;
-import android.media.MediaMetadataRetriever;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.view.*;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
 import com.example.musicplayer.R;
-import com.example.musicplayer.lib.log.L;
+import com.example.musicplayer.biz.SongCollectionManager;
 import com.example.musicplayer.lib.task.TaskExecutor;
 import com.example.musicplayer.lib.util.Util;
 import com.example.musicplayer.pojo.Song;
 import com.example.musicplayer.pojo.SongCollection;
 import com.example.musicplayer.service.MusicPlayerService;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -75,14 +71,18 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         mGridView.setAdapter(mAdapter);
     }
 
-    private void scanSongs() {
+    private void scanSongs(final boolean force) {
+        if (!force && mSongCollection != null) {
+            return;
+        }
+
         mMenu.getItem(0).setEnabled(false);
         getActivity().setProgressBarIndeterminateVisibility(true);
 
         TaskExecutor.executeTask(new Runnable() {
             @Override
             public void run() {
-                final SongCollection songCollection = loadSongs();
+                final SongCollection songCollection = SongCollectionManager.getInstance().getSongCollection(force);
 
                 TaskExecutor.runTaskOnUiThread(new Runnable() {
                     @Override
@@ -189,8 +189,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 Song song = songList.get(position);
 
                 Intent intent = new Intent(getActivity(), MusicPlayerService.class);
-                intent.putExtra("song", song);
-                intent.putExtra("progress", 0);
+                intent.putExtra(MusicPlayerService.EXTRA_SONG_ID, song.id);
+                intent.putExtra(MusicPlayerService.EXTRA_PLAYING_PROGRESS, 0);
                 getActivity().startService(intent);
             }
         });
@@ -241,14 +241,14 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         inflater.inflate(R.menu.main, menu);
         mMenu = menu;
 
-        scanSongs();
+        scanSongs(false);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_scan:
-                scanSongs();
+                scanSongs(true);
                 break;
             case R.id.action_quit:
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -272,59 +272,5 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
         return super.onOptionsItemSelected(item);
     }
 
-
-    private SongCollection loadSongs() {
-        List<Song> songList = new ArrayList<Song>();
-
-        try {
-            // make sure the following code is exception free.
-
-            Cursor cursor = getActivity().getContentResolver().query(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-                    , new String[]{ MediaStore.Audio.Media._ID, MediaStore.Audio.Media.DATA }
-                    , MediaStore.Audio.Media.IS_MUSIC + "!=0"
-                    , null
-                    , null
-            );
-
-            while (cursor.moveToNext()) {
-                long id = cursor.getLong(0);
-                String filePath = cursor.getString(1);
-
-                File file = new File(filePath);
-                if (!file.exists()) {
-                    continue;
-                }
-
-                try {
-                    MediaMetadataRetriever mmr = new MediaMetadataRetriever();
-                    mmr.setDataSource(filePath);
-
-                    String duration = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION), "");
-
-                    int intDuration = Util.safeParseInt(duration, 0);
-
-                    if (intDuration == 0) {
-                        continue;
-                    }
-
-                    String title = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE), file.getName());
-                    String artist = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST), "");
-                    String album = Util.ensureNotNull(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM), "");
-
-                    Song song = new Song(id, title, artist, album, intDuration, filePath);
-                    songList.add(song);
-
-                    L.d("loaded song: %d, %s, %s, %s, %s", id, title, artist, album, duration);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return new SongCollection(songList);
-    }
 
 }

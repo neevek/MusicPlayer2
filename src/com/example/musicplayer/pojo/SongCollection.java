@@ -9,6 +9,7 @@ import java.util.*;
  */
 public class SongCollection {
     private List<Song> mAllSongs;
+    private Map<Long, Song> mSongMap;
 
     public enum CollectionType {
         ARTIST("歌手"), ALBUM("专辑");
@@ -33,12 +34,53 @@ public class SongCollection {
         }
     }
 
-    public SongCollection(List<Song> allSongs) {
+    public SongCollection(List<Song> allSongs, Map<Long, Song> songMap) {
         mAllSongs = allSongs;
+        mSongMap = songMap;
     }
 
     public List<Song> getAllSongs() {
         return mAllSongs;
+    }
+
+    public Song getSongById(long id) {
+        return mSongMap.get(id);
+    }
+
+    public Song getNextSong(Song song) {
+        Song nextSong = null;
+        int index = mAllSongs.indexOf(song);
+        if (index != -1) {
+            ++index;
+            if (index == mAllSongs.size()) {
+                index = 0;
+            }
+
+            nextSong = mAllSongs.get(index);
+            if (song == nextSong) {
+                nextSong = null;
+            }
+        }
+
+        return nextSong;
+    }
+
+    public Song getPrevSong(Song song) {
+        Song prevSong = null;
+        int index = mAllSongs.indexOf(song);
+        if (index != -1) {
+            --index;
+            if (index < 0) {
+                index = mAllSongs.size() - 1;
+            }
+
+            prevSong = mAllSongs.get(index);
+            if (song == prevSong) {
+                prevSong = null;
+            }
+        }
+
+        return prevSong;
     }
 
     public Map<String, List<Song>> getSongCollectionByType(CollectionType type) {
