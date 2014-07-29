@@ -35,7 +35,7 @@ public class SongCollectionManager {
         return sInstance;
     }
 
-    public SongCollection getSongCollection(boolean force) {
+    public synchronized SongCollection getSongCollection(boolean force) {
         if (force || mSongCollection == null) {
             loadSongs();
         }

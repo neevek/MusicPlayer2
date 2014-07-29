@@ -12,6 +12,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import com.example.musicplayer.biz.SongCollectionManager;
 import com.example.musicplayer.fragment.MainFragment;
+import com.example.musicplayer.lib.task.TaskExecutor;
 import com.example.musicplayer.lib.util.Util;
 import com.example.musicplayer.pojo.Song;
 import com.example.musicplayer.service.MusicPlayerService;
@@ -43,6 +44,34 @@ public class MainActivity extends Activity implements View.OnClickListener {
         bindMusicPlayerService();
         registerReceiver();
         showMainFragment();
+        initCurrentSongInfo();
+    }
+
+    private void initCurrentSongInfo() {
+        final SharedPreferences sharedPreferences = getSharedPreferences(MusicPlayerService.SHARED_PREF, MODE_PRIVATE);
+        final long songId = sharedPreferences.getLong(MusicPlayerService.PREF_KEY_LAST_PLAYED_SONG_ID, 0);
+        if (songId == 0) {
+            return;
+        }
+
+
+        TaskExecutor.executeTask(new Runnable() {
+            @Override
+            public void run() {
+                mCurrentSong = SongCollectionManager.getInstance().getSongCollection(false).getSongById(songId);
+                if (mCurrentSong == null) {
+                    return;
+                }
+
+                final int progress = sharedPreferences.getInt(MusicPlayerService.PREF_KEY_LAST_PLAYED_SONG_PROGRESS, 0);
+                TaskExecutor.runTaskOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        setCurrentSongInfo(progress);
+                    }
+                });
+            }
+        });
     }
 
     private void registerReceiver() {
@@ -117,6 +146,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
     }
 
+    private void setCurrentSongInfo(int progress) {
+        if (mCurrentSong != null) {
+            mTvSongTitle.setText(mCurrentSong.title);
+            mTvArtist.setText(mCurrentSong.artist);
+            mTvSongProgress.setText(Util.formatMilliseconds(progress, null));
+            mTvSongDuration.setText("/" + Util.formatMilliseconds(mCurrentSong.duration, null));
+        } else {
+            mTvSongTitle.setText("未选歌曲");
+            mTvArtist.setText("");
+            mTvSongProgress.setText("00:00");
+            mTvSongDuration.setText("/00:00");
+        }
+    }
+
     class MusicPlayingStateChangedReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -130,7 +173,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     }
 
                     int progress = intent.getIntExtra(MusicPlayerService.EXTRA_PLAYING_PROGRESS, 0);
-                    setInfoForCurSong(progress);
+                    setCurrentSongInfo(progress);
                     break;
                 }
                 case MusicPlayerService.EXTRA_PLAYING_STATE_STOP: {
@@ -146,19 +189,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
             }
         }
-
-        private void setInfoForCurSong(int progress) {
-            if (mCurrentSong != null) {
-                mTvSongTitle.setText(mCurrentSong.title);
-                mTvArtist.setText(mCurrentSong.artist);
-                mTvSongProgress.setText(Util.formatMilliseconds(progress, null));
-                mTvSongDuration.setText("/" + Util.formatMilliseconds(mCurrentSong.duration, null));
-            } else {
-                mTvSongTitle.setText("未选歌曲");
-                mTvArtist.setText("");
-                mTvSongProgress.setText("00:00");
-                mTvSongDuration.setText("/00:00");
-            }
-        }
     }
+
 }

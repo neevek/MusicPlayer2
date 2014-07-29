@@ -1,10 +1,10 @@
 package com.example.musicplayer.service;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.drawable.BitmapDrawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -34,6 +34,10 @@ public class MusicPlayerService extends Service {
     public final static int EXTRA_PLAYING_STATE_STOP = 2;
     public final static int EXTRA_PLAYING_STATE_PLAYING = 3;
 
+    public final static String SHARED_PREF = "MusicPlayerPref";
+    public final static String PREF_KEY_LAST_PLAYED_SONG_ID = "song_id";
+    public final static String PREF_KEY_LAST_PLAYED_SONG_PROGRESS = "song_progress";
+
     private MediaPlayer mMediaPlayer;
     private Song mCurrentSong;
 
@@ -43,9 +47,12 @@ public class MusicPlayerService extends Service {
 
     private final static int NOTIFICATION_ID = 1;
     private NotificationManager mNotificationManager;
+    private NotificationCompat.Builder mNotificationBuilder = new NotificationCompat.Builder(this);
     private PendingIntent mOpenMainAppPendingIntent;
 
     private StringBuilder mProgressBuffer = new StringBuilder();
+
+    private boolean mIsPlaying;
 
     @Override
     public void onCreate() {
@@ -67,7 +74,9 @@ public class MusicPlayerService extends Service {
         L.d("destroying service...");
         stopPlaying();
 
-        mPlayingProgressNotifier.stopThread();
+        if (mPlayingProgressNotifier != null) {
+            mPlayingProgressNotifier.stopThread();
+        }
 
         mActionQueue.scheduleTask(new Runnable() {
             @Override
@@ -97,17 +106,16 @@ public class MusicPlayerService extends Service {
     @Override
     public int onStartCommand(final Intent intent, int flags, int startId) {
         if (intent != null) {
-            SongCollection songCollection = SongCollectionManager.getInstance().getSongCollection(false);
-            final Song song = songCollection.getSongById(intent.getLongExtra(EXTRA_SONG_ID, 0));
-
-            if (song != null) {
-                mActionQueue.scheduleTask(new Runnable() {
-                    @Override
-                    public void run() {
+            mActionQueue.scheduleTask(new Runnable() {
+                @Override
+                public void run() {
+                    SongCollection songCollection = SongCollectionManager.getInstance().getSongCollection(false);
+                    final Song song = songCollection.getSongById(intent.getLongExtra(EXTRA_SONG_ID, 0));
+                    if (song != null) {
                         playSong(song, intent.getIntExtra("progress", 0));
                     }
-                });
-            }
+                }
+            });
         }
         return START_NOT_STICKY;
     }
@@ -147,6 +155,7 @@ public class MusicPlayerService extends Service {
             mMediaPlayer.prepare();
             mMediaPlayer.seekTo(progress);
             mMediaPlayer.start();
+            mIsPlaying = true;
 
             mCurrentSong = song;
 
@@ -167,32 +176,34 @@ public class MusicPlayerService extends Service {
         sendOrderedBroadcast(intent, null);
 
         mProgressBuffer.delete(0, mProgressBuffer.length());
-        Notification notification = new NotificationCompat.Builder(this)
+        mNotificationBuilder
                 .setTicker("正在播放 " + mCurrentSong.title)
                 .setContentTitle(mCurrentSong.title + "(" + mCurrentSong.artist + ")")
                 .setContentText(Util.formatMilliseconds(progress, mProgressBuffer))
                 .setSmallIcon(R.drawable.notification_icon)
                 .setLargeIcon(((BitmapDrawable) getResources().getDrawable(R.drawable.ic_launcher)).getBitmap())
                 .setContentIntent(mOpenMainAppPendingIntent)
-                .setAutoCancel(true)
-                .setOngoing(true)
-                .build();
+                .setOnlyAlertOnce(true)
+                .setOngoing(true);
 
-        startForeground(NOTIFICATION_ID, notification);
+        startForeground(NOTIFICATION_ID, mNotificationBuilder.build());
     }
 
     private void stopPlaying() {
-        if (!isPlaying()) {
-            return;
-        }
-
         mActionQueue.scheduleTask(new Runnable() {
             @Override
             public void run() {
+                int progress = mMediaPlayer.getCurrentPosition();
+
                 if (isPlaying()) {
                     mMediaPlayer.stop();
                     stopForeground(true);
                 }
+
+                saveProgress(progress);
+
+                mCurrentSong = null;
+                mIsPlaying = false;
             }
         });
     }
@@ -201,6 +212,8 @@ public class MusicPlayerService extends Service {
         mActionQueue.scheduleTask(new Runnable() {
             @Override
             public void run() {
+                int progress = mMediaPlayer.getCurrentPosition();
+
                 if (isPlaying()) {
                     mMediaPlayer.pause();
 
@@ -213,8 +226,21 @@ public class MusicPlayerService extends Service {
                         stopForeground(true);
                     }
                 }
+
+                saveProgress(progress);
+
+                mIsPlaying = false;
             }
         });
+    }
+
+    private void saveProgress(int progress) {
+        if (mCurrentSong != null) {
+            getSharedPreferences(MusicPlayerService.SHARED_PREF, MODE_PRIVATE).edit()
+                    .putLong(MusicPlayerService.PREF_KEY_LAST_PLAYED_SONG_ID, mCurrentSong.id)
+                    .putInt(MusicPlayerService.PREF_KEY_LAST_PLAYED_SONG_PROGRESS, progress)
+                    .commit();
+        }
     }
 
     public void resumePlayback() {
@@ -225,38 +251,51 @@ public class MusicPlayerService extends Service {
                     return;
                 }
 
-                if (mCurrentSong == null) {
-                    return;
-                }
+                if (mCurrentSong != null) {
+                    mIsPlaying = true;
+                    mMediaPlayer.start();
+                    sendNotificationAndBroadcastPlayingState(mMediaPlayer.getCurrentPosition());
+                } else {
+                    SharedPreferences sharedPreferences = getSharedPreferences(MusicPlayerService.SHARED_PREF, MODE_PRIVATE);
+                    long songId = sharedPreferences.getLong(PREF_KEY_LAST_PLAYED_SONG_ID, 0);
+                    if (songId == 0) {
+                        return;
+                    }
 
-                mMediaPlayer.start();
-                sendNotificationAndBroadcastPlayingState(mMediaPlayer.getCurrentPosition());
+                    Song song = SongCollectionManager.getInstance().getSongCollection(false).getSongById(songId);
+                    if (song != null) {
+                        int progress = sharedPreferences.getInt(PREF_KEY_LAST_PLAYED_SONG_PROGRESS, 0);
+                        playSong(song, progress);
+                    }
+
+                }
             }
         });
     }
 
     // true: previous song, false: next song
-    public void playPrevOrNextSong(boolean prevOrNext) {
+    public void playPrevOrNextSong(final boolean prevOrNext) {
         if (mCurrentSong == null) {
             return;
         }
 
-        SongCollection songCollection = SongCollectionManager.getInstance().getSongCollection(false);
-        final Song song = prevOrNext ? songCollection.getPrevSong(mCurrentSong) : songCollection.getNextSong(mCurrentSong);
+        mActionQueue.scheduleTask(new Runnable() {
+            @Override
+            public void run() {
+                SongCollection songCollection = SongCollectionManager.getInstance().getSongCollection(false);
+                final Song song = prevOrNext ? songCollection.getPrevSong(mCurrentSong) : songCollection.getNextSong(mCurrentSong);
 
-        if (song != null) {
-            mActionQueue.scheduleTask(new Runnable() {
-                @Override
-                public void run() {
+                if (song != null) {
                     playSong(song, 0);
                 }
-            });
-        }
+            }
+        });
     }
 
     public boolean isPlaying() {
         try {
-            return mMediaPlayer.isPlaying();
+            mIsPlaying = mMediaPlayer.isPlaying();
+            return mIsPlaying;
         } catch (IllegalStateException e) {
             e.printStackTrace();
         }
@@ -293,23 +332,14 @@ public class MusicPlayerService extends Service {
                     continue;
                 }
 
-                if (!isPlaying())
+                if (!mIsPlaying)
                     continue;
 
                 mLastPlayingProgress = mMediaPlayer.getCurrentPosition();
 
                 mProgressBuffer.delete(0, mProgressBuffer.length());
-                Notification notification = new NotificationCompat.Builder(MusicPlayerService.this)
-                        .setContentTitle(mCurrentSong.title + "(" + mCurrentSong.artist + ")")
-                        .setContentText(Util.formatMilliseconds(mLastPlayingProgress, mProgressBuffer))
-                        .setSmallIcon(R.drawable.notification_icon)
-                        .setLargeIcon(((BitmapDrawable) getResources().getDrawable(R.drawable.ic_launcher)).getBitmap())
-                        .setContentIntent(mOpenMainAppPendingIntent)
-                        .setAutoCancel(true)
-                        .setOngoing(true)
-                        .build();
-
-                mNotificationManager.notify(1, notification);
+                mNotificationBuilder.setContentText(Util.formatMilliseconds(mLastPlayingProgress, mProgressBuffer));
+                mNotificationManager.notify(1, mNotificationBuilder.build());
 
                 Intent intent = new Intent(ACTION_MUSIC_PLAYING_STATE_CHANGED);
                 intent.putExtra(EXTRA_STATE, EXTRA_PLAYING_STATE_PLAYING);
