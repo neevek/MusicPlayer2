@@ -10,6 +10,7 @@ import java.util.*;
 public class SongCollection {
     private List<Song> mAllSongs;
     private Map<Long, Song> mSongMap;
+    private List<Song> mFavoriteSongs;
 
     public enum CollectionType {
         ARTIST("歌手"), ALBUM("专辑");
@@ -34,13 +35,18 @@ public class SongCollection {
         }
     }
 
-    public SongCollection(List<Song> allSongs, Map<Long, Song> songMap) {
+    public SongCollection(List<Song> allSongs, Map<Long, Song> songMap, List<Song> favoriteSongs) {
         mAllSongs = allSongs;
         mSongMap = songMap;
+        mFavoriteSongs = favoriteSongs;
     }
 
     public List<Song> getAllSongs() {
         return mAllSongs;
+    }
+
+    public List<Song> getFavoriteSongs() {
+        return mFavoriteSongs;
     }
 
     public Song getSongById(long id) {

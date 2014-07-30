@@ -4,6 +4,7 @@ import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.provider.MediaStore;
 import com.example.musicplayer.MusicPlayerApplication;
+import com.example.musicplayer.db.MusicDAO;
 import com.example.musicplayer.lib.log.L;
 import com.example.musicplayer.lib.util.Util;
 import com.example.musicplayer.pojo.Song;
@@ -96,6 +97,6 @@ public class SongCollectionManager {
             e.printStackTrace();
         }
 
-        mSongCollection = new SongCollection(songList, mSongMap);
+        mSongCollection = new SongCollection(songList, mSongMap, MusicDAO.getInstance().getFavorites());
     }
 }

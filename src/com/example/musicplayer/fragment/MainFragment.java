@@ -34,9 +34,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
     private GridView mGridView;
     private MainGridViewItemAdapter mAdapter;
 
-    private final static String[] MENU_ITEM_TEXT = new String[]{"全部歌曲", "歌手", "专辑"};
-    private final static int[] MENU_ITEM_ICON = new int[] { R.drawable.icon_music, R.drawable.icon_artist, R.drawable.icon_album };
-
+    private final static String[] MENU_ITEM_TEXT = new String[]{"全部歌曲", "歌手", "专辑", "收藏"};
+    private final static int[] MENU_ITEM_ICON = new int[] { R.drawable.icon_music, R.drawable.icon_artist, R.drawable.icon_album, R.drawable.icon_favorite};
 
     private String mTitle;
 
@@ -138,6 +137,9 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                     case 2:
                         tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(" + mSongCollection.getSongCollectionByType(SongCollection.CollectionType.ALBUM).size() + ")");
                         break;
+                    case 3:
+                        tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(" + mSongCollection.getFavoriteSongs().size() + ")");
+                        break;
                 }
             } else {
                 tvMenuItem.setText(MENU_ITEM_TEXT[position] + "(0)");
@@ -151,7 +153,7 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         switch (position) {
             case 0: {
-                pushMusicListFragmentWithSongList("全部歌曲", mSongCollection.getAllSongs());
+                pushMusicListFragmentWithSongList("全部歌曲", SongListFragment.ListType.SONG_LIST, mSongCollection.getAllSongs());
                 break;
             }
             case 1: {
@@ -162,11 +164,15 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 pushCategorizedMusicListFragment(SongCollection.CollectionType.ALBUM);
                 break;
             }
+            case 3: {
+                pushMusicListFragmentWithSongList("收藏", SongListFragment.ListType.FAVORITE_LIST, mSongCollection.getFavoriteSongs());
+                break;
+            }
         }
     }
 
-    private void pushMusicListFragmentWithSongList(String title, final List<Song> songList) {
-        pushMusicListFragmentWithItemHandler(title, new MusicListFragment.MusicListItemHandler() {
+    private void pushMusicListFragmentWithSongList(String title, SongListFragment.ListType listType, final List<Song> songList) {
+        pushFragment(new SongListFragment(title, new BaseMusicListFragment.MusicListItemHandler() {
             @Override
             public int getCount() {
                 return songList.size();
@@ -193,13 +199,13 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 intent.putExtra(MusicPlayerService.EXTRA_PLAYING_PROGRESS, 0);
                 getActivity().startService(intent);
             }
-        });
+        }, listType, songList));
     }
 
     private void pushCategorizedMusicListFragment(SongCollection.CollectionType type) {
         final Map<String, List<Song>> map = mSongCollection.getSongCollectionByType(type);
         final List<String> keyList = new ArrayList<String>(map.keySet());
-        pushMusicListFragmentWithItemHandler(type.getTitle(), new MusicListFragment.MusicListItemHandler() {
+        pushFragment(new BaseMusicListFragment(type.getTitle(), new BaseMusicListFragment.MusicListItemHandler() {
             @Override
             public int getCount() {
                 return keyList.size();
@@ -219,16 +225,16 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
             public void onItemClick(int position) {
                 String key = keyList.get(position);
                 List<Song> songList = map.get(key);
-                pushMusicListFragmentWithSongList(key, songList);
+                pushMusicListFragmentWithSongList(key, SongListFragment.ListType.SONG_LIST, songList);
             }
-        });
+        }));
     }
 
-    private void pushMusicListFragmentWithItemHandler(String title, MusicListFragment.MusicListItemHandler handler) {
+    private void pushFragment(Fragment fragment) {
         FragmentManager fm = getFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
 
-        ft.replace(R.id.container, new MusicListFragment(title, handler));
+        ft.replace(R.id.container, fragment);
 
         ft.addToBackStack(null);
         ft.setTransition(FragmentTransaction.TRANSIT_ENTER_MASK);

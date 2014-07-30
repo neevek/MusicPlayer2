@@ -14,11 +14,12 @@ import com.example.musicplayer.R;
 /**
  * Created by neevek on 7/20/14.
  */
-public class MusicListFragment extends Fragment implements AdapterView.OnItemClickListener {
+public class BaseMusicListFragment extends Fragment implements AdapterView.OnItemClickListener {
     private String mTitle;
     private MusicListItemHandler mMusicListItemHandler;
+    private MusicListAdapter mMusicListAdapter;
 
-    public MusicListFragment(String title, MusicListItemHandler fetcher) {
+    public BaseMusicListFragment(String title, MusicListItemHandler fetcher) {
         mTitle = title;
         mMusicListItemHandler = fetcher;
     }
@@ -36,16 +37,22 @@ public class MusicListFragment extends Fragment implements AdapterView.OnItemCli
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
+        mMusicListAdapter = new MusicListAdapter();
+
         ListView listView = (ListView)view.findViewById(R.id.lv_music_list);
         // don't forget to call this!!!
         listView.setEmptyView(view.findViewById(android.R.id.empty));
-        listView.setAdapter(new MusicListAdapter());
+        listView.setAdapter(mMusicListAdapter);
         listView.setOnItemClickListener(this);
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         mMusicListItemHandler.onItemClick(position);
+    }
+
+    protected MusicListAdapter getMusicListAdapter() {
+        return mMusicListAdapter;
     }
 
     class MusicListAdapter extends BaseAdapter {
