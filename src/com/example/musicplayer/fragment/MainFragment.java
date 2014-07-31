@@ -13,6 +13,7 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.TextView;
+import com.example.musicplayer.AboutActivity;
 import com.example.musicplayer.R;
 import com.example.musicplayer.biz.SongCollectionManager;
 import com.example.musicplayer.lib.task.TaskExecutor;
@@ -271,8 +272,8 @@ public class MainFragment extends Fragment implements AdapterView.OnItemClickLis
                 builder.create().show();
                 return true;
             case R.id.action_about:
-//                Intent intent = new Intent(this, AboutActivity.class);
-//                startActivity(intent);
+                Intent intent = new Intent(getActivity(), AboutActivity.class);
+                startActivity(intent);
                 break;
         }
         return super.onOptionsItemSelected(item);
