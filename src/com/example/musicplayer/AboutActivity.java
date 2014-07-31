@@ -3,11 +3,14 @@ package com.example.musicplayer;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.*;
 import android.widget.Toast;
+
+import java.util.regex.Pattern;
 
 /**
  * Created by neevek on 7/31/14.
@@ -37,6 +40,7 @@ public class AboutActivity extends Activity {
         mWebView.setScrollbarFadingEnabled(true);
         mWebView.setScrollBarStyle(View.SCROLLBARS_OUTSIDE_OVERLAY);
         mWebView.setWebChromeClient(new MyWebChromeClient());
+        mWebView.setWebViewClient(new MyWebViewClient());
 
         WebSettings webSettings = mWebView.getSettings();
 
@@ -85,6 +89,31 @@ public class AboutActivity extends Activity {
                     .setMessage(message).setCancelable(true).show();
             result.confirm();
             return true;
+        }
+    }
+
+    class MyWebViewClient extends WebViewClient {
+        Pattern neteaseRegex = Pattern.compile("^http://.*163\\.com.*");
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, String url) {
+            if (neteaseRegex.matcher(url).matches()) {
+                // let the webview handle the request
+                return false;
+            }
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            startActivity(intent);
+            return true;
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mWebView.canGoBack()) {
+            mWebView.goBack();
+        } else {
+            super.onBackPressed();
         }
     }
 }
