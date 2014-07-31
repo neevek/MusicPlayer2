@@ -4,6 +4,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1, target-densitydpi=medium-dpi, user-scalable=no">
 
         <title>WebView示例</title>
+
+        <script type="text/javascript" charset="utf-8">
+            function showToast(msg) {
+                window.myjsobject.showToast(msg);
+            }
+            function showAndroidVersion(){
+                alert(window.myjsobject.getAndroidVersion());
+            }
+            function openSettingsActivity(){
+                myjsobject.openSettingsActivity();
+            }
+        </script>
         
     </head>
 
@@ -12,6 +24,10 @@
             <h2>MusicPlayer v1.0 </h2>
             <p>
                 这是一个非常简单的WebView使用示例！
+            <p>
+            <input type="button" value="显示Toast信息" onclick="showToast('这是来自Javascript的字符串！')"> <br/>
+            <input type="button" value="显示Android版本" onclick="showAndroidVersion()"> <br/>
+            <input type="button" value="打开设置界面" onclick="openSettingsActivity()"> <br/>
         </div>
     </body>
 </html>
